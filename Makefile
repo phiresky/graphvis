@@ -1,3 +1,3 @@
 
 viz.js:
-	tsc --out viz.js --sourcemap --noImplicitAny viz.ts
+	tsc --out bin/viz.js --sourcemap --noImplicitAny src/viz.ts
