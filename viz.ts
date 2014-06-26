@@ -164,10 +164,9 @@ function graphFromStringInp(str:string,getCoordinates:(nodeNumber:number)=>{x:nu
     var nodes=new Array<GraphNode>(nodeCount);
     var i=0;
     for(;i<split.length-1;i++) {
-        var lineSplit;
-        if(split[i+1].length===0) lineSplit=[];
-        else lineSplit=split[i+1].split(" ");
-        var edges=[];
+        var lineSplit:string[]=[];
+        if(split[i+1].length>0) lineSplit=split[i+1].split(" ");
+        var edges:number[]=[];
         lineSplit.forEach(s=>s.length>0&&edges.push(+s-1));
         var coords=getCoordinates(i);
         nodes[i]=new GraphNode(edges,coords.x,coords.y);
@@ -184,7 +183,7 @@ $(() => {
     var h=window.innerHeight;//document.body.clientHeight;
     
     $.get("inp/testcase9.txt",response=>{
-        var graph=graphFromStringInp(response,n=>({x:w/2+Math.random()*100-50,y:w/2+Math.random()*100-50}));
+        var graph=graphFromStringInp(response,n=>({x:w/2+Math.random()*100-50,y:h/2+Math.random()*100-50}));
 	    gv=new GraphViewer($("#viz")[0],w,h,graph);
 	    gv.beginDrawing();
     });
