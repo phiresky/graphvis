@@ -204,7 +204,7 @@ $(function () {
     var w = window.innerWidth;
     var h = window.innerHeight;
 
-    $.get("testcase9.txt", function (response) {
+    $.get("inp/testcase9.txt", function (response) {
         var graph = graphFromStringInp(response, function (n) {
             return ({ x: w / 2 + Math.random() * 100 - 50, y: w / 2 + Math.random() * 100 - 50 });
         });
