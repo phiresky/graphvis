@@ -268,4 +268,4 @@ function initGraphViewerFromString(response:string) {
 function initGraphViewer(url:string) {
 	$.get(url,initGraphViewerFromString);
 }
-$(()=>initGraphViewer("inp/testcase9.txt"));
+$(()=>initGraphViewer((location.search&&location.search.substr(1))||"inp/testcase9.txt"));

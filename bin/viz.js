@@ -294,6 +294,6 @@ function initGraphViewer(url) {
     $.get(url, initGraphViewerFromString);
 }
 $(function () {
-    return initGraphViewer("inp/testcase9.txt");
+    return initGraphViewer((location.search && location.search.substr(1)) || "inp/testcase9.txt");
 });
 //# sourceMappingURL=viz.js.map
