@@ -198,16 +198,18 @@ function graphFromStringInp(str, getCoordinates) {
     return new Graph(nodes);
 }
 var gv;
-$(function () {
+function initGraphViewerFromString(response) {
     var w = window.innerWidth;
     var h = window.innerHeight;
-
-    $.get("inp/testcase9.txt", function (response) {
-        var graph = graphFromStringInp(response, function (n) {
-            return ({ x: w / 2 + Math.random() * 100 - 50, y: h / 2 + Math.random() * 100 - 50 });
-        });
-        gv = new GraphViewer($("#viz")[0], w, h, graph);
-        gv.beginDrawing();
+    var graph = graphFromStringInp(response, function (n) {
+        return ({ x: w / 2 + Math.random() * 100 - 50, y: h / 2 + Math.random() * 100 - 50 });
     });
-});
+    gv = new GraphViewer($("#viz")[0], w, h, graph);
+    gv.beginDrawing();
+}
+
+function initGraphViewer() {
+    $.get("inp/testcase9.txt", initGraphViewerFromString);
+}
+$(initGraphViewer);
 //# sourceMappingURL=viz.js.map

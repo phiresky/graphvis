@@ -178,13 +178,15 @@ function graphFromStringInp(str:string,getCoordinates:(nodeNumber:number)=>{x:nu
     return new Graph(nodes);
 }
 var gv:GraphViewer;
-$(() => {
-    var w=window.innerWidth;//document.body.clientWidth;
-    var h=window.innerHeight;//document.body.clientHeight;
-    
-    $.get("inp/testcase9.txt",response=>{
-        var graph=graphFromStringInp(response,n=>({x:w/2+Math.random()*100-50,y:h/2+Math.random()*100-50}));
-	    gv=new GraphViewer($("#viz")[0],w,h,graph);
-	    gv.beginDrawing();
-    });
-});
+function initGraphViewerFromString(response:string) {
+	var w=window.innerWidth;
+	var h=window.innerHeight
+	var graph=graphFromStringInp(response,n=>({x:w/2+Math.random()*100-50,y:h/2+Math.random()*100-50}));
+	gv=new GraphViewer($("#viz")[0],w,h,graph);
+	gv.beginDrawing();
+}
+
+function initGraphViewer() {
+	$.get("inp/testcase9.txt",initGraphViewerFromString);
+}
+$(initGraphViewer);
