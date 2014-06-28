@@ -9,7 +9,9 @@ class Graph {
     constructor(public nodes:GraphNode[]) {}
     targetDist=100;
     friction=0.9;
-    gravity=-500;
+    gravity=-700;
+	attraction=1/1000;
+	leftright=0.05;
     update() {
         for(var i=0;i<this.nodes.length;i++) {
             var n=this.nodes[i];
@@ -18,12 +20,13 @@ class Graph {
                 var dx=n.x-m.x;
                 var dy=n.y-m.y;
                 var d=Math.sqrt(dx*dx+dy*dy);
-                var f=(d-this.targetDist)/1000;
-                //var grav=1000/d/d;//m1*m2/d^2;
+                var f=(d-this.targetDist)*this.attraction;
                 n.ax-=f*dx/d;
                 n.ay-=f*dy/d;
                 m.ax+=f*dx/d;
                 m.ay+=f*dy/d;
+				n.ax-=this.leftright;
+				m.ax+=this.leftright;
             }
             for(var j=i;j<this.nodes.length;j++) {
                 var m=this.nodes[j];
@@ -65,7 +68,7 @@ class Util {
 	    Util.drawArrowHead(ctx,x1,y1,x2,y2);
     }
     
-    static drawArrowHead(ctx:CanvasRenderingContext2D,x1:number,y1:number,x2:number,y2:number) {
+    static drawArrowHead(ctx:CanvasRenderingContext2D,x2:number,y2:number,x1:number,y1:number) {
         var radians=Math.atan((y2-y1)/(x2-x1));
         radians+=((x2>x1)?-90:90)*Math.PI/180;
         ctx.save();
@@ -88,12 +91,37 @@ class GraphViewer {
 	graph:Graph;
 	drawing:boolean;
 	mouseInfo:any={down:false,downX:0,downY:0};
-	drawOffset={x:0,y:0,ax:0,ay:0,scale:{a:0,v:0,p:0,real:1}};
+	drawOffset={x:0,y:0,ax:0,ay:0,scale:{a:-0.05,v:0,p:0,real:1}};
+	alpha=false;
 	constructor(container:HTMLElement,width:number,height:number,data:Graph) {
 	    var viz=<HTMLCanvasElement>document.createElement("canvas");
 	    viz.width=this.w=width;
 	    viz.height=this.h=height;
+		if((<any>container).__graphViewer) {
+			(<any>container).__graphViewer.destroy();
+			$(container).empty();
+		}
+		(<any>container).__graphViewer = this;
         container.appendChild(viz);
+	    var doc=<HTMLDivElement>document.createElement("div");
+		$(doc)
+			.css("position","relative")
+			.css("background-color","rgba(255,255,255,0.8)")
+			.css("margin","1ex")
+			.css("padding","1ex")
+			.css("float","left")
+			.css("border","1px solid gray")
+			.css("font-family","mono")
+			.html(["Graph Visualisation (<a href='https://github.com/phiresky/graphvis'>source</a>)"
+					,"Commands:"
+					,"(shift)+a - change attraction strength"
+					,"(shift)+g - change gravity strength"
+					,"(shift)+d - change target distance"
+					,"(shift)+s - change scale"
+					,"(shift)+r - change left/right offset"
+					,"ctrl+r    - load a graph file from the clipboard"
+					,"        t - toggle transparency"].join("<br>"))
+			.appendTo(container);
         this.canvas=viz;
 		this.ctx=viz.getContext("2d");
 		this.graph=data;
@@ -116,6 +144,42 @@ class GraphViewer {
 		viz.onmousewheel=e=>{
 		    this.drawOffset.scale.a=e.wheelDelta/5000;
 		}
+		window.addEventListener("keydown",e=>{
+			if(e.keyCode==17) {
+				(<any>window)._copyArea=$("<textarea>").appendTo("body").focus();
+			}
+			var actions:{[keyCode:number]:(shiftPressed:boolean)=>void}={
+				84:(s)=>this.alpha=!this.alpha,// t
+				71:(shift)=>this.graph.gravity*=shift?2:0.5,// g
+				68:(shift)=>this.graph.targetDist*=shift?2:0.5,// d
+				65:(shift)=>this.graph.attraction*=shift?2:0.5,// a
+				83:(shift)=>this.drawOffset.scale.a+=shift?0.02:-0.02, // s
+				82:(shift)=>this.graph.leftright-=shift?0.1:-0.1 // r
+			};
+			var action=actions[e.keyCode];
+			if(action) action(e.shiftKey);
+			//console.log(e.keyCode);
+			//console.log(e);
+		});
+		window.addEventListener("keyup",e=>{
+			if(e.keyCode==17) {
+				var textarea= (<any>window)._copyArea;
+				if(textarea) {
+					var val=textarea.val();
+					console.log(val);
+					if(val.length>1) {
+						initGraphViewerFromString(val);
+					}
+					textarea.remove();
+				}
+			}
+		});
+		window.addEventListener("resize",e=>{
+			viz.width=this.w=$(container).width();
+			viz.height=this.h=$(container).height();
+		});
+
+
 	}
 	
 	beginDrawing() {
@@ -139,26 +203,32 @@ class GraphViewer {
 	    ctx.fillStyle="#fff";
 	    ctx.fillRect(0,0,this.w,this.h);
 	    ctx.fillStyle="#000";
+	    ctx.strokeStyle=this.alpha?"rgba(0,0,0,0.5)":"#000";
 	    ctx.save();
 	    
 	    ctx.translate(this.drawOffset.x,this.drawOffset.y);
 	    ctx.translate(this.w/2,this.h/2);
 	    ctx.scale(this.drawOffset.scale.real,this.drawOffset.scale.real);
 	    ctx.translate(-this.w/2,-this.h/2);
-	    
 	    for(var i=0;i<this.graph.nodes.length;i++) {
 	        var node=this.graph.nodes[i];
-	        Util.drawCircle(this.ctx,node.x,node.y,6);
 	        for(var e=0;e<node.edges.length;e++) {
 	            var node2=this.graph.nodes[node.edges[e]];
 	            Util.drawLine(this.ctx,node.x,node.y,node2.x,node2.y);
 	        }
+	        Util.drawCircle(this.ctx,node.x,node.y,6);
 	    }
 	    ctx.restore();
 	    if(this.drawing) requestAnimationFrame(this.draw.bind(this));
 	}
+
+	destroy() {
+		this.drawing=false;
+		$(this.canvas).remove();
+	}
 }
-function graphFromStringInp(str:string,getCoordinates:(nodeNumber:number)=>{x:number;y:number}) {
+function graphFromStringInp(str:string,zeroBased=false,coordinateGenerator?:(nodeNumber:number)=>{x:number;y:number}) {
+	if(!coordinateGenerator) coordinateGenerator=n=>({x:window.innerWidth/2+Math.random()*500-250,y:window.innerHeight/2+Math.random()*500-250});
     var split=str.split("\n");
     var nodeCount=+split[0].split(" ")[0];
     var nodes=new Array<GraphNode>(nodeCount);
@@ -167,12 +237,12 @@ function graphFromStringInp(str:string,getCoordinates:(nodeNumber:number)=>{x:nu
         var lineSplit:string[]=[];
         if(split[i+1].length>0) lineSplit=split[i+1].split(" ");
         var edges:number[]=[];
-        lineSplit.forEach(s=>s.length>0&&edges.push(+s-1));
-        var coords=getCoordinates(i);
+        lineSplit.forEach(s=>s.length>0&&edges.push(+s-(zeroBased?0:1)));
+        var coords=coordinateGenerator(i);
         nodes[i]=new GraphNode(edges,coords.x,coords.y);
     }
     while(i<nodeCount) {
-        var coords=getCoordinates(i);
+        var coords=coordinateGenerator(i);
         nodes[i++]=new GraphNode([],coords.x,coords.y);
     }
     return new Graph(nodes);
@@ -181,12 +251,12 @@ var gv:GraphViewer;
 function initGraphViewerFromString(response:string) {
 	var w=window.innerWidth;
 	var h=window.innerHeight
-	var graph=graphFromStringInp(response,n=>({x:w/2+Math.random()*100-50,y:h/2+Math.random()*100-50}));
+	var graph=graphFromStringInp(response);
 	gv=new GraphViewer($("#viz")[0],w,h,graph);
 	gv.beginDrawing();
 }
 
-function initGraphViewer() {
-	$.get("inp/testcase9.txt",initGraphViewerFromString);
+function initGraphViewer(url:string) {
+	$.get(url,initGraphViewerFromString);
 }
-$(initGraphViewer);
+$(()=>initGraphViewer("inp/testcase9.txt"));
