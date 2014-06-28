@@ -95,7 +95,7 @@ class GraphViewer {
 	alpha=false;
 	constructor(containerElement:HTMLElement,width:number,height:number,data:Graph) {
 		var container=$(containerElement);
-		this.drawOffset.scale.a=-data.nodes.length/1000;
+		this.drawOffset.scale.a=-data.nodes.length/2000;
 	    var viz=$("<canvas>")
 		if((<any>container[0]).__graphViewer) {
 			(<any>container[0]).__graphViewer.destroy();
@@ -151,8 +151,9 @@ class GraphViewer {
 		};
 		window.addEventListener('DOMMouseScroll',wheelListener);
 		window.addEventListener('mousewheel',wheelListener);
-		window.addEventListener("keydown",e=>{
+		$(window).keydown(e=>{
 			if(e.keyCode==17) {
+				console.log("hi");
 				(<any>window)._copyArea=$("<textarea>").appendTo("body").focus();
 			}
 			var actions:{[keyCode:number]:(shiftPressed:boolean)=>void}={
@@ -168,7 +169,7 @@ class GraphViewer {
 			//console.log(e.keyCode);
 			//console.log(e);
 		});
-		window.addEventListener("keyup",e=>{
+		$(window).keyup(e=>{
 			if(e.keyCode==17) {
 				var textarea= (<any>window)._copyArea;
 				if(textarea!==undefined) {
@@ -232,6 +233,7 @@ class GraphViewer {
 	destroy() {
 		this.drawing=false;
 		$(this.canvas).remove();
+		$(window).off();
 	}
 }
 function graphFromStringInp(str:string,zeroBased=false,coordinateGenerator?:(nodeNumber:number)=>{x:number;y:number}) {

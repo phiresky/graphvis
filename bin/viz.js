@@ -110,7 +110,7 @@ var GraphViewer = (function () {
         this.drawOffset = { x: 0, y: 0, ax: 0, ay: 0, scale: { a: 0, v: 0, p: 0, real: 1 } };
         this.alpha = false;
         var container = $(containerElement);
-        this.drawOffset.scale.a = -data.nodes.length / 1000;
+        this.drawOffset.scale.a = -data.nodes.length / 2000;
         var viz = $("<canvas>");
         if (container[0].__graphViewer) {
             container[0].__graphViewer.destroy();
@@ -157,8 +157,9 @@ var GraphViewer = (function () {
         };
         window.addEventListener('DOMMouseScroll', wheelListener);
         window.addEventListener('mousewheel', wheelListener);
-        window.addEventListener("keydown", function (e) {
+        $(window).keydown(function (e) {
             if (e.keyCode == 17) {
+                console.log("hi");
                 window._copyArea = $("<textarea>").appendTo("body").focus();
             }
             var actions = {
@@ -187,7 +188,7 @@ var GraphViewer = (function () {
             //console.log(e.keyCode);
             //console.log(e);
         });
-        window.addEventListener("keyup", function (e) {
+        $(window).keyup(function (e) {
             if (e.keyCode == 17) {
                 var textarea = window._copyArea;
                 if (textarea !== undefined) {
@@ -249,6 +250,7 @@ var GraphViewer = (function () {
     GraphViewer.prototype.destroy = function () {
         this.drawing = false;
         $(this.canvas).remove();
+        $(window).off();
     };
     return GraphViewer;
 })();
