@@ -126,7 +126,7 @@ var GraphViewer = (function () {
             "(shift)+d - change target distance",
             "(shift)+s - change scale",
             "(shift)+r - change left/right offset",
-            "ctrl+r    - load a graph file from the clipboard",
+            "ctrl+v    - load a graph file from the clipboard",
             "        t - toggle transparency"].join("<br>")).appendTo(container);
         this.canvas = viz[0];
         this.canvas.width = this.w = width;
