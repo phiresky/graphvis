@@ -91,21 +91,22 @@ class GraphViewer {
 	graph:Graph;
 	drawing:boolean;
 	mouseInfo:any={down:false,downX:0,downY:0};
-	drawOffset={x:0,y:0,ax:0,ay:0,scale:{a:-0.05,v:0,p:0,real:1}};
+	drawOffset={x:0,y:0,ax:0,ay:0,scale:{a:0,v:0,p:0,real:1}};
 	alpha=false;
-	constructor(container:HTMLElement,width:number,height:number,data:Graph) {
-	    var viz=<HTMLCanvasElement>document.createElement("canvas");
-	    viz.width=this.w=width;
-	    viz.height=this.h=height;
-		if((<any>container).__graphViewer) {
-			(<any>container).__graphViewer.destroy();
-			$(container).empty();
+	constructor(containerElement:HTMLElement,width:number,height:number,data:Graph) {
+		var container=$(containerElement);
+		this.drawOffset.scale.a=-data.nodes.length/1000;
+	    var viz=$("<canvas>")
+		if((<any>container[0]).__graphViewer) {
+			(<any>container[0]).__graphViewer.destroy();
+			container.empty();
 		}
-		(<any>container).__graphViewer = this;
-        container.appendChild(viz);
-	    var doc=<HTMLDivElement>document.createElement("div");
-		$(doc)
-			.css("position","relative")
+		(<any>container[0]).__graphViewer = this;
+        container.append(viz);
+		$("<div>")
+			.css("position","absolute")
+			.css("top","0")
+			.css("left","0")
 			.css("background-color","rgba(255,255,255,0.8)")
 			.css("margin","1ex")
 			.css("padding","1ex")
@@ -122,28 +123,34 @@ class GraphViewer {
 					,"ctrl+r    - load a graph file from the clipboard"
 					,"        t - toggle transparency"].join("<br>"))
 			.appendTo(container);
-        this.canvas=viz;
-		this.ctx=viz.getContext("2d");
+        this.canvas=<HTMLCanvasElement>viz[0];
+		this.canvas.width=this.w=width;
+		this.canvas.height=this.h=height;
+		this.ctx=this.canvas.getContext("2d");
 		this.graph=data;
-		viz.onmousedown=e=>{
-		    this.mouseInfo.downX=e.x;
-		    this.mouseInfo.downY=e.y;
+		container.mousedown(e=>{
+		    this.mouseInfo.downX=e.pageX;
+		    this.mouseInfo.downY=e.pageY;
 		    this.mouseInfo.down=true;
-		}
-		viz.onmousemove=e=>{
+		});
+		container.mousemove(e=>{
 		    if(this.mouseInfo.down) {
-    		    this.drawOffset.x=this.drawOffset.ax+e.x-this.mouseInfo.downX;
-    		    this.drawOffset.y=this.drawOffset.ay+e.y-this.mouseInfo.downY;
+    		    this.drawOffset.x=this.drawOffset.ax+e.pageX-this.mouseInfo.downX;
+    		    this.drawOffset.y=this.drawOffset.ay+e.pageY-this.mouseInfo.downY;
 		    }
-		}
-		viz.onmouseup=e=>{
+		});
+		container.mouseup(e=>{
 		    this.mouseInfo.down=false;
 		    this.drawOffset.ax=this.drawOffset.x;
 		    this.drawOffset.ay=this.drawOffset.y;
-		}
-		viz.onmousewheel=e=>{
-		    this.drawOffset.scale.a=e.wheelDelta/5000;
-		}
+		});
+		var wheelListener=(e:MouseWheelEvent)=>{
+			var delta=e.wheelDelta;
+			if(e.detail) delta=-40*e.detail;
+		    this.drawOffset.scale.a=delta/5000;
+		};
+		window.addEventListener('DOMMouseScroll',wheelListener);
+		window.addEventListener('mousewheel',wheelListener);
 		window.addEventListener("keydown",e=>{
 			if(e.keyCode==17) {
 				(<any>window)._copyArea=$("<textarea>").appendTo("body").focus();
@@ -164,19 +171,19 @@ class GraphViewer {
 		window.addEventListener("keyup",e=>{
 			if(e.keyCode==17) {
 				var textarea= (<any>window)._copyArea;
-				if(textarea) {
+				if(textarea!==undefined) {
 					var val=textarea.val();
-					console.log(val);
+					textarea.remove();
 					if(val.length>1) {
+						console.log("Loading from clipboard");
 						initGraphViewerFromString(val);
 					}
-					textarea.remove();
 				}
 			}
 		});
 		window.addEventListener("resize",e=>{
-			viz.width=this.w=$(container).width();
-			viz.height=this.h=$(container).height();
+			this.canvas.width=this.w=container.width();
+			this.canvas.height=this.h=container.height();
 		});
 
 

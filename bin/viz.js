@@ -104,22 +104,21 @@ var Util = (function () {
     return Util;
 })();
 var GraphViewer = (function () {
-    function GraphViewer(container, width, height, data) {
+    function GraphViewer(containerElement, width, height, data) {
         var _this = this;
         this.mouseInfo = { down: false, downX: 0, downY: 0 };
-        this.drawOffset = { x: 0, y: 0, ax: 0, ay: 0, scale: { a: -0.05, v: 0, p: 0, real: 1 } };
+        this.drawOffset = { x: 0, y: 0, ax: 0, ay: 0, scale: { a: 0, v: 0, p: 0, real: 1 } };
         this.alpha = false;
-        var viz = document.createElement("canvas");
-        viz.width = this.w = width;
-        viz.height = this.h = height;
-        if (container.__graphViewer) {
-            container.__graphViewer.destroy();
-            $(container).empty();
+        var container = $(containerElement);
+        this.drawOffset.scale.a = -data.nodes.length / 1000;
+        var viz = $("<canvas>");
+        if (container[0].__graphViewer) {
+            container[0].__graphViewer.destroy();
+            container.empty();
         }
-        container.__graphViewer = this;
-        container.appendChild(viz);
-        var doc = document.createElement("div");
-        $(doc).css("position", "relative").css("background-color", "rgba(255,255,255,0.8)").css("margin", "1ex").css("padding", "1ex").css("float", "left").css("border", "1px solid gray").css("font-family", "mono").html([
+        container[0].__graphViewer = this;
+        container.append(viz);
+        $("<div>").css("position", "absolute").css("top", "0").css("left", "0").css("background-color", "rgba(255,255,255,0.8)").css("margin", "1ex").css("padding", "1ex").css("float", "left").css("border", "1px solid gray").css("font-family", "mono").html([
             "Graph Visualisation (<a href='https://github.com/phiresky/graphvis'>source</a>)",
             "Commands:",
             "(shift)+a - change attraction strength",
@@ -129,28 +128,35 @@ var GraphViewer = (function () {
             "(shift)+r - change left/right offset",
             "ctrl+r    - load a graph file from the clipboard",
             "        t - toggle transparency"].join("<br>")).appendTo(container);
-        this.canvas = viz;
-        this.ctx = viz.getContext("2d");
+        this.canvas = viz[0];
+        this.canvas.width = this.w = width;
+        this.canvas.height = this.h = height;
+        this.ctx = this.canvas.getContext("2d");
         this.graph = data;
-        viz.onmousedown = function (e) {
-            _this.mouseInfo.downX = e.x;
-            _this.mouseInfo.downY = e.y;
+        container.mousedown(function (e) {
+            _this.mouseInfo.downX = e.pageX;
+            _this.mouseInfo.downY = e.pageY;
             _this.mouseInfo.down = true;
-        };
-        viz.onmousemove = function (e) {
+        });
+        container.mousemove(function (e) {
             if (_this.mouseInfo.down) {
-                _this.drawOffset.x = _this.drawOffset.ax + e.x - _this.mouseInfo.downX;
-                _this.drawOffset.y = _this.drawOffset.ay + e.y - _this.mouseInfo.downY;
+                _this.drawOffset.x = _this.drawOffset.ax + e.pageX - _this.mouseInfo.downX;
+                _this.drawOffset.y = _this.drawOffset.ay + e.pageY - _this.mouseInfo.downY;
             }
-        };
-        viz.onmouseup = function (e) {
+        });
+        container.mouseup(function (e) {
             _this.mouseInfo.down = false;
             _this.drawOffset.ax = _this.drawOffset.x;
             _this.drawOffset.ay = _this.drawOffset.y;
+        });
+        var wheelListener = function (e) {
+            var delta = e.wheelDelta;
+            if (e.detail)
+                delta = -40 * e.detail;
+            _this.drawOffset.scale.a = delta / 5000;
         };
-        viz.onmousewheel = function (e) {
-            _this.drawOffset.scale.a = e.wheelDelta / 5000;
-        };
+        window.addEventListener('DOMMouseScroll', wheelListener);
+        window.addEventListener('mousewheel', wheelListener);
         window.addEventListener("keydown", function (e) {
             if (e.keyCode == 17) {
                 window._copyArea = $("<textarea>").appendTo("body").focus();
@@ -184,19 +190,19 @@ var GraphViewer = (function () {
         window.addEventListener("keyup", function (e) {
             if (e.keyCode == 17) {
                 var textarea = window._copyArea;
-                if (textarea) {
+                if (textarea !== undefined) {
                     var val = textarea.val();
-                    console.log(val);
+                    textarea.remove();
                     if (val.length > 1) {
+                        console.log("Loading from clipboard");
                         initGraphViewerFromString(val);
                     }
-                    textarea.remove();
                 }
             }
         });
         window.addEventListener("resize", function (e) {
-            viz.width = _this.w = $(container).width();
-            viz.height = _this.h = $(container).height();
+            _this.canvas.width = _this.w = container.width();
+            _this.canvas.height = _this.h = container.height();
         });
     }
     GraphViewer.prototype.beginDrawing = function () {
